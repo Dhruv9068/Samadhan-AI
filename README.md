@@ -243,14 +243,14 @@ ibmcloud cf push samadhan-ai-backend
 
 ## 📈 Performance Metrics
 
-| Metric                  | Value                |
-| ----------------------- | -------------------- |
-| AI Response Time        | < 2 seconds          |
-| Categorization Accuracy | 95%+                 |
-| Language Support        | 10+ Indian Languages |
-| Concurrent Users        | 1000+                |
-| Dashboard Sync Delay    | < 100ms              |
-| System Uptime           | 99.9%                |
+| Metric                  | Value                    |
+| ----------------------- | -------------------------|
+| AI Response Time        | < 5 seconds              |
+| Categorization Accuracy | 95%+                     |
+| Language Support        | 10+ Indian Languages     |
+| Concurrent Users        | 1000+(depends on credits |
+| Dashboard Sync Delay    | < 100ms                  |
+| System Uptime           | 99.9%(mock)              |
 
 ---
 
