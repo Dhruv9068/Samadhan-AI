@@ -148,45 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               </div>
             </motion.div>
 
-            {/* Quick Stats - Hidden on small screens */}
-            <div className="mt-6 space-y-4 hidden md:block">
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="text-sm font-semibold text-blue-800 mb-2">Quick Stats</h4>
-                <div className="text-xs text-blue-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>Active Users:</span>
-                    <span className="font-semibold">1,247</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Pending:</span>
-                    <span className="font-semibold">89</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Resolved Today:</span>
-                    <span className="font-semibold">156</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <h4 className="text-sm font-semibold text-purple-800 mb-2">AI Performance</h4>
-                <div className="text-xs text-purple-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>Response Time:</span>
-                    <span className="font-semibold">1.2s</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Accuracy:</span>
-                    <span className="font-semibold">94.5%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Languages:</span>
-                    <span className="font-semibold">10+</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      </div>
         </div>
 
         {/* Decorative Background Effects - Non-interactive */}

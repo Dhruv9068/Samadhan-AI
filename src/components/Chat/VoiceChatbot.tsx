@@ -179,7 +179,7 @@ export const VoiceChatbot: React.FC = () => {
                   {getServiceStatusIcon(backendStatus)}
                   <span>AI Backend</span>
                   <span>•</span>
-                  <span className="text-yellow-300">🏆 Hackathon Ready</span>
+                  <span className="text-yellow-300">Highly Trained</span>
                 </p>
               </div>
             </div>
@@ -330,12 +330,12 @@ export const VoiceChatbot: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Hackathon Info */}
+           
                 {backendStatus === 'connected' && (
                   <div className="mt-4 text-xs text-gray-500">
                     <div className="flex items-center justify-center space-x-2">
                       <Award className="w-3 h-3 text-yellow-500" />
-                      <span>Hackathon Project: AI-powered UP CM Helpline 1076 automation</span>
+                      <span>AI-powered UP CM Helpline 1076 automation</span>
                     </div>
                     <div className="flex items-center justify-center space-x-2 mt-1">
                       <Info className="w-3 h-3" />
