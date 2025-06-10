@@ -1,0 +1,14 @@
+---
+applications:
+- name: samadhan-ai-backend
+  memory: 512M
+  instances: 1
+  buildpacks:
+    - python_buildpack
+  env:
+    FLASK_ENV: production
+    PYTHONPATH: /home/vcap/app
+  services:
+    - samadhan-ai-db
+  routes:
+    - route: samadhan-ai-backend.mybluemix.net

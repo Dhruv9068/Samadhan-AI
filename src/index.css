@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure proper stacking and interaction */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
+/* CRITICAL: Fix z-index stacking issues for search */
+.z-1 { z-index: 1; }
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
+.z-30 { z-index: 30; }
+.z-40 { z-index: 40; }
+.z-50 { z-index: 50; }
+.z-\[100\] { z-index: 100; }
+.z-\[200\] { z-index: 200; }
+.z-\[9999\] { z-index: 9999; }
+
+/* Ensure search dropdown is always on top */
+.search-dropdown {
+  z-index: 9999 !important;
+  position: relative;
+}
+
+/* Ensure scrollable areas work properly */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix interaction issues on desktop */
+@media (min-width: 1024px) {
+  .pointer-events-none {
+    pointer-events: none !important;
+  }
+  
+  .pointer-events-auto {
+    pointer-events: auto !important;
+  }
+}
+
+/* Ensure buttons and interactive elements are clickable */
+button, a, input, select, textarea {
+  position: relative;
+  z-index: 10;
+}
+
+/* Fix modal and dropdown z-index hierarchy */
+.fixed {
+  z-index: 1000;
+}
+
+/* Search results should be above everything */
+.search-results-dropdown {
+  z-index: 9999 !important;
+}
+
+/* Ensure main content doesn't interfere with search */
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Header should be below search results */
+header {
+  z-index: 30;
+}
+
+/* Sidebar should be below search results */
+.sidebar {
+  z-index: 50;
+}
+
+/* Dashboard content should be lowest */
+.dashboard-content {
+  z-index: 1;
+}
+
+/* Complaint cards should not interfere with search */
+.complaint-card {
+  z-index: 2;
+}
+
+/* Stats cards should not interfere with search */
+.stats-card {
+  z-index: 2;
+}
