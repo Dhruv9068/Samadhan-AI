@@ -1,6 +1,6 @@
 # 🚀 Samadhan AI - AI-Powered Citizen Grievance Redressal System
 
-🎥 **Demo Video:** [Watch on YouTube](https://youtu.be/QJdDbCI56-A)
+🎥 **Demo Video:** [Watch on YouTube](https://youtu.be/QJdDbCI56-A?si=eljc5ec3c1KMAliy)
 
 ---
 
@@ -298,7 +298,7 @@ ibmcloud cf push samadhan-ai-backend
 | Metric                  | Value              |
 |-------------------------|--------------------|
 | Response Time           | < 5s               |
-| Categorization Accuracy| 95%+               |
+| Categorization Accuracy | 95%+               |
 | Language Support        | 10+ Languages      |
 | Concurrent Users        | 1000+              |
 | Dashboard Sync Delay    | < 100ms            |
@@ -308,7 +308,7 @@ ibmcloud cf push samadhan-ai-backend
 
 ## 📺 Watch the Demo
 
-📽️ [**Click here to watch the YouTube demo**](https://youtu.be/QJdDbCI56-A)
+📽️ [**Click here to watch the YouTube demo**](https://youtu.be/QJdDbCI56-A?si=eljc5ec3c1KMAliy)
 
 ---
 
