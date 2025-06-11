@@ -50,23 +50,7 @@ CORS(app, origins=["http://localhost:5173", "https://eclectic-centaur-42bbfd.net
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
-# Configuration - USING YOUR EXACT CONFIGURATION
-class Config:
-    # IBM Watson Configuration - YOUR EXACT CONFIGURATION
-    WATSONX_API_KEY = os.getenv('WATSONX_API_KEY', 'Jpx1dwuGdjzgEgsFBMGCJii8D_piHpUNYiJeym16ho0T')
-    WATSONX_DEPLOYMENT_ID = os.getenv('WATSONX_DEPLOYMENT_ID', '3aaa4718-6122-49cf-bf7c-a2c122d62058')
-    # FIXED: Using streaming endpoint like your friend
-    WATSONX_STREAMING_URL = f"https://us-south.ml.cloud.ibm.com/ml/v4/deployments/{os.getenv('WATSONX_DEPLOYMENT_ID', 'b9d4d4d2-725a-4f1f-89e6-1633389905d8')}/ai_service_stream?version=2021-05-01"
-    WATSONX_VERSION = os.getenv('WATSONX_VERSION', '2021-05-01')
-    
-    # OpenRouter Configuration (DeepSeek)
-    OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
-    
-    # Server Configuration
-    PORT = int(os.getenv('PORT', 5000))
-    FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
-config = Config()
 
 # Global variables for caching
 token_cache = {
