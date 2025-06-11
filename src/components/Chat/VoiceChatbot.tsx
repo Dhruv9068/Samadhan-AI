@@ -68,19 +68,19 @@ export const VoiceChatbot: React.FC = () => {
             console.log('✅ Samadhan AI backend connected:', data);
           } else {
             setBackendStatus('error');
-            console.error('❌ Backend health check failed:', response.status);
+            console.error('Backend health check failed:', response.status);
           }
         } catch (error) {
           setBackendStatus('error');
-          console.error('❌ Backend connection failed:', error);
+          console.error('Backend connection failed:', error);
         }
         
-        console.log('🔍 Service Status Check:');
-        console.log('Firebase:', isFirebaseInitialized() ? '✅ Connected' : '❌ Error');
-        console.log('Samadhan AI Backend:', backendStatus === 'connected' ? '✅ Connected' : '❌ Error');
+        // console.log('🔍 Service Status Check:');
+        // console.log('Firebase:', isFirebaseInitialized() ? '✅ Connected' : '❌ Error');
+        // console.log('Samadhan AI Backend:', backendStatus === 'connected' ? '✅ Connected' : '❌ Error');
         
       } catch (error) {
-        console.error('❌ Services status check failed:', error);
+        console.error('Services status check failed:', error);
         setBackendStatus('error');
         setFirebaseStatus('error');
       }
@@ -371,7 +371,10 @@ export const VoiceChatbot: React.FC = () => {
                       <p className={`text-xs mt-1 ${
                         message.isUser ? 'text-white/70' : 'text-gray-500'
                       }`}>
+                        <div className='flex justify-between items-center'>
                         {message.timestamp.toLocaleTimeString()}
+                        <p>Samadhan AI</p>
+                        </div>
                         {message.language && ` • ${message.language}`}
                       </p>
                     </div>

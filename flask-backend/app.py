@@ -46,18 +46,18 @@ except ImportError:
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173", "https://eclectic-centaur-42bbfd.netlify.app"])
 
-# Configure logging - CLEANED UP FOR HACKATHON
+# Configure logging - 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
 # Configuration - USING YOUR EXACT CONFIGURATION
 class Config:
     # IBM Watson Configuration - YOUR EXACT CONFIGURATION
-    WATSONX_API_KEY = os.getenv('WATSONX_API_KEY', 'UFC2xNPCDeKALJHWsV6vKsEvH7EoPZcpTB08rdsgibaG')
+    WATSONX_API_KEY = os.getenv('WATSONX_API_KEY', 'Jpx1dwuGdjzgEgsFBMGCJii8D_piHpUNYiJeym16ho0T')
     WATSONX_DEPLOYMENT_ID = os.getenv('WATSONX_DEPLOYMENT_ID', '3aaa4718-6122-49cf-bf7c-a2c122d62058')
     # FIXED: Using streaming endpoint like your friend
-    WATSONX_STREAMING_URL = f"https://eu-de.ml.cloud.ibm.com/ml/v4/deployments/{os.getenv('WATSONX_DEPLOYMENT_ID', '3aaa4718-6122-49cf-bf7c-a2c122d62058')}/ai_service_stream?version=2021-05-01"
-    WATSONX_VERSION = os.getenv('WATSONX_VERSION', '2023-05-29')
+    WATSONX_STREAMING_URL = f"https://us-south.ml.cloud.ibm.com/ml/v4/deployments/{os.getenv('WATSONX_DEPLOYMENT_ID', 'b9d4d4d2-725a-4f1f-89e6-1633389905d8')}/ai_service_stream?version=2021-05-01"
+    WATSONX_VERSION = os.getenv('WATSONX_VERSION', '2021-05-01')
     
     # OpenRouter Configuration (DeepSeek)
     OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
@@ -261,7 +261,7 @@ def call_watsonx_streaming(request_body: dict) -> str:
         logger.error(f'❌ WatsonX failed: {e}')
         raise
 
-def call_openrouter_api(prompt: str, model: str = "deepseek/deepseek-chat") -> str:
+def call_openrouter_api(prompt: str, model: str = "deepseek/deepseek-r1-0528-qwen3-8b:free") -> str:
     """Call OpenRouter API with DeepSeek model (fallback when WatsonX fails)"""
     try:
         if not config.OPENROUTER_API_KEY:
@@ -617,7 +617,7 @@ def root():
     """Root endpoint - Welcome message"""
     dataset_stats = get_dataset_stats()
     return jsonify({
-        'message': 'Samadhan AI - UP Government Services (Hackathon Winner)',
+        'message': 'Samadhan AI - UP Government Services ',
         'status': 'running',
         'version': '3.0.0 - COMPREHENSIVE DATASET',
         'project': SAMADHAN_AI_COMPLETE_DATASET['project_info'],
@@ -800,7 +800,7 @@ def internal_error(error):
 
 if __name__ == '__main__':
     dataset_stats = get_dataset_stats()
-    logger.info('🚀 Starting Samadhan AI Backend (Hackathon Winner)...')
+    logger.info('🚀 Starting Samadhan AI Backend ')
     logger.info(f'📊 Project: {SAMADHAN_AI_COMPLETE_DATASET["project_info"]["name"]}')
     logger.info(f'🎯 Theme: {SAMADHAN_AI_COMPLETE_DATASET["project_info"]["theme"]}')
     logger.info(f'📈 Dataset Size: {dataset_stats["total_training_documents"]} training documents')
@@ -814,6 +814,6 @@ if __name__ == '__main__':
     # Initialize RAG system
     initialize_sentence_transformers()
     
-    logger.info('🏆 Samadhan AI ready for hackathon with comprehensive dataset!')
+    logger.info('AI ready ')
     
     app.run(host='0.0.0.0', port=config.PORT, debug=True)

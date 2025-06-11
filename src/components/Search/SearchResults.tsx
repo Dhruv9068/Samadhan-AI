@@ -135,7 +135,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
               {/* Background glow */}
               <div className="absolute top-0 right-0 w-16 h-16 bg-gold-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 pointer-events-none"></div>
               
-              <div className="relative z-10">
+              <div className="relative z-[999]">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start space-x-4 flex-1">
                     <div className="flex-shrink-0">

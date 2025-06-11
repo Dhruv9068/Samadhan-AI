@@ -58,7 +58,7 @@ if IBM_CLOUD:
 else:
     port = int(os.getenv('PORT', 5000))
     host = '0.0.0.0'
-    CORS(app, origins=["http://localhost:5173", "https://eclectic-centaur-42bbfd.netlify.app"])
+    CORS(app, origins=["http://localhost:5173", "https://samadhan-ai.netlify.app"])
 
 # Configure logging for IBM Cloud
 logging.basicConfig(
@@ -104,7 +104,7 @@ def initialize_sentence_transformers():
             sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
             logger.info("✅ RAG system initialized with comprehensive Samadhan AI dataset")
         else:
-            logger.warning("⚠️ Using rule-based analysis (sentence transformers not available)")
+            logger.warning("⚠️ Using rule-based analysis")
     except Exception as e:
         logger.error(f"❌ Error initializing RAG system: {e}")
 
