@@ -9,6 +9,10 @@ from typing import Dict, Any, List, Optional
 import time
 import traceback
 import re
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import the comprehensive Samadhan AI dataset
 from samadhan_dataset import SAMADHAN_AI_COMPLETE_DATASET
@@ -46,11 +50,36 @@ except ImportError:
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173", "https://eclectic-centaur-42bbfd.netlify.app"])
 
-# Configure logging - 
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
+# Configuration - USING ENVIRONMENT VARIABLES ONLY
+class Config:
+    # IBM Watson Configuration - FROM ENVIRONMENT VARIABLES
+    WATSONX_API_KEY = os.getenv('WATSONX_API_KEY')
+    WATSONX_DEPLOYMENT_ID = os.getenv('WATSONX_DEPLOYMENT_ID')
+    WATSONX_URL = os.getenv('WATSONX_URL')
+    WATSONX_VERSION = os.getenv('WATSONX_VERSION', '2021-05-01')
+    
+    # Build streaming URL from environment variables
+    @property
+    def WATSONX_STREAMING_URL(self):
+        if self.WATSONX_URL:
+            return self.WATSONX_URL
+        elif self.WATSONX_DEPLOYMENT_ID:
+            return f"https://us-south.ml.cloud.ibm.com/ml/v4/deployments/{self.WATSONX_DEPLOYMENT_ID}/ai_service_stream?version={self.WATSONX_VERSION}"
+        else:
+            return None
+    
+    # OpenRouter Configuration (DeepSeek) - FROM ENVIRONMENT VARIABLES
+    OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+    
+    # Server Configuration - FROM ENVIRONMENT VARIABLES
+    PORT = int(os.getenv('PORT', 5000))
+    FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
+config = Config()
 
 # Global variables for caching
 token_cache = {
@@ -107,7 +136,7 @@ def initialize_sentence_transformers():
         logger.error(f"❌ Error initializing RAG system: {e}")
 
 def get_ibm_cloud_token():
-    """Get IBM Cloud IAM token with caching - EXACTLY like your friend's code"""
+    """Get IBM Cloud IAM token with caching"""
     global token_cache
     
     # Check if we have a valid cached token
@@ -115,9 +144,11 @@ def get_ibm_cloud_token():
         return token_cache['token']
     
     try:
+        if not config.WATSONX_API_KEY:
+            raise Exception("WatsonX API key not configured in environment variables")
+        
         logger.info('🔄 Getting IBM Cloud token...')
         
-        # EXACTLY like your friend's approach
         response = requests.post(
             'https://iam.cloud.ibm.com/identity/token',
             headers={
@@ -148,20 +179,22 @@ def get_ibm_cloud_token():
         raise
 
 def call_watsonx_streaming(request_body: dict) -> str:
-    """Call WatsonX streaming API - EXACTLY like your friend's working approach with FIXED parsing"""
+    """Call WatsonX streaming API"""
     try:
         if not config.WATSONX_API_KEY:
             raise Exception("WatsonX API key not configured")
+        
+        if not config.WATSONX_STREAMING_URL:
+            raise Exception("WatsonX URL not configured")
         
         logger.info('🤖 Calling WatsonX...')
         
         # Get IBM Cloud token
         access_token = get_ibm_cloud_token()
         
-        # Use the streaming URL
+        # Use the streaming URL from config
         scoring_url = config.WATSONX_STREAMING_URL
         
-        # EXACTLY like your friend's approach
         response = requests.post(
             scoring_url,
             headers={
@@ -178,9 +211,9 @@ def call_watsonx_streaming(request_body: dict) -> str:
             logger.error(f'❌ WatsonX error: {response.status_code}')
             raise Exception(f'WatsonX API error: {response.status_code}')
 
-        # Process the streaming response - EXACTLY like your friend's code with FIXED parsing
+        # Process the streaming response
         response_text = ""
-        buffer = ""  # Buffer to handle split JSON
+        buffer = ""
 
         try:
             for chunk in response.iter_content(chunk_size=1024, decode_unicode=True):
@@ -192,7 +225,7 @@ def call_watsonx_streaming(request_body: dict) -> str:
 
                     # Split buffer by newlines and process complete lines
                     lines = buffer.split('\n')
-                    buffer = lines.pop() if lines else ""  # Keep the last (possibly incomplete) line in buffer
+                    buffer = lines.pop() if lines else ""
 
                     for line in lines:
                         if line.startswith('data:'):
@@ -200,7 +233,6 @@ def call_watsonx_streaming(request_body: dict) -> str:
                             if data_str and data_str != '[DONE]':
                                 try:
                                     json_data = json.loads(data_str)
-                                    # FIXED: Better error handling for choices array
                                     choices = json_data.get('choices', [])
                                     if choices and len(choices) > 0:
                                         delta = choices[0].get('delta', {})
@@ -218,7 +250,6 @@ def call_watsonx_streaming(request_body: dict) -> str:
                 if data_str and data_str != '[DONE]':
                     try:
                         json_data = json.loads(data_str)
-                        # FIXED: Better error handling for choices array
                         choices = json_data.get('choices', [])
                         if choices and len(choices) > 0:
                             delta = choices[0].get('delta', {})
@@ -235,7 +266,7 @@ def call_watsonx_streaming(request_body: dict) -> str:
         if not response_text.strip():
             raise Exception('No response from WatsonX')
 
-        # Clean up response - remove markdown formatting
+        # Clean up response
         cleaned_text = clean_ai_response(response_text)
         
         logger.info('✅ WatsonX response generated')
@@ -295,12 +326,12 @@ def clean_ai_response(text: str) -> str:
         return text
     
     # Remove markdown formatting
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Remove **bold**
-    text = re.sub(r'\*(.*?)\*', r'\1', text)      # Remove *italic*
-    text = re.sub(r'#{1,6}\s*', '', text)         # Remove headers
-    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)  # Remove code blocks
-    text = re.sub(r'`(.*?)`', r'\1', text)        # Remove inline code
-    text = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', text)  # Remove links
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
+    text = re.sub(r'#{1,6}\s*', '', text)
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    text = re.sub(r'`(.*?)`', r'\1', text)
+    text = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', text)
     
     # Remove extra whitespace and newlines
     text = re.sub(r'\n\s*\n', '\n', text)
@@ -467,7 +498,6 @@ Provide a professional, empathetic response that:
 Keep response concise (2-3 sentences). No markdown formatting."""
 
             try:
-                # Use your friend's exact request format
                 request_body = {
                     "messages": [
                         {
@@ -601,9 +631,9 @@ def root():
     """Root endpoint - Welcome message"""
     dataset_stats = get_dataset_stats()
     return jsonify({
-        'message': 'Samadhan AI - UP Government Services ',
+        'message': 'Samadhan AI - UP Government Services',
         'status': 'running',
-        'version': '3.0.0 - COMPREHENSIVE DATASET',
+        'version': '3.0.0 - SECURE',
         'project': SAMADHAN_AI_COMPLETE_DATASET['project_info'],
         'dataset_statistics': dataset_stats,
         'ai_services': {
@@ -611,6 +641,12 @@ def root():
             'openrouter_deepseek_fallback': bool(config.OPENROUTER_API_KEY),
             'rag_system': SENTENCE_TRANSFORMERS_AVAILABLE,
             'comprehensive_dataset': 'loaded'
+        },
+        'configuration': {
+            'watsonx_configured': bool(config.WATSONX_API_KEY),
+            'openrouter_configured': bool(config.OPENROUTER_API_KEY),
+            'deployment_id_set': bool(config.WATSONX_DEPLOYMENT_ID),
+            'streaming_url_available': bool(config.WATSONX_STREAMING_URL)
         },
         'endpoints': ['/health', '/api/ai/chat', '/api/ai/analyze', '/api/up/data', '/api/dataset/stats'],
         'timestamp': datetime.now().isoformat()
@@ -631,11 +667,13 @@ def health_check():
         },
         'watsonx': {
             'configured': bool(config.WATSONX_API_KEY),
-            'streaming_ready': True
+            'deployment_id': bool(config.WATSONX_DEPLOYMENT_ID),
+            'streaming_url': bool(config.WATSONX_STREAMING_URL),
+            'streaming_ready': bool(config.WATSONX_API_KEY and config.WATSONX_STREAMING_URL)
         },
         'openrouter': {
             'configured': bool(config.OPENROUTER_API_KEY),
-            'fallback_ready': True
+            'fallback_ready': bool(config.OPENROUTER_API_KEY)
         }
     })
 
@@ -739,7 +777,13 @@ def test_watsonx():
         if not config.WATSONX_API_KEY:
             return jsonify({
                 'success': False,
-                'error': 'WatsonX API key not configured'
+                'error': 'WatsonX API key not configured in environment variables'
+            }), 400
+        
+        if not config.WATSONX_STREAMING_URL:
+            return jsonify({
+                'success': False,
+                'error': 'WatsonX URL not configured in environment variables'
             }), 400
         
         logger.info('🧪 Testing WatsonX...')
@@ -784,7 +828,7 @@ def internal_error(error):
 
 if __name__ == '__main__':
     dataset_stats = get_dataset_stats()
-    logger.info('🚀 Starting Samadhan AI Backend ')
+    logger.info('🚀 Starting Samadhan AI Backend (SECURE)')
     logger.info(f'📊 Project: {SAMADHAN_AI_COMPLETE_DATASET["project_info"]["name"]}')
     logger.info(f'🎯 Theme: {SAMADHAN_AI_COMPLETE_DATASET["project_info"]["theme"]}')
     logger.info(f'📈 Dataset Size: {dataset_stats["total_training_documents"]} training documents')
@@ -792,12 +836,17 @@ if __name__ == '__main__':
     logger.info(f'📞 Helplines: {dataset_stats["helplines"]}')
     logger.info(f'🏙️ Districts: {dataset_stats["districts"]}')
     logger.info(f'💬 Complaint Patterns: {dataset_stats["complaint_patterns"]}')
-    logger.info(f'🔧 WatsonX: {"✅ Ready" if config.WATSONX_API_KEY else "❌ Not configured"}')
-    logger.info(f'🔧 OpenRouter: {"✅ Ready" if config.OPENROUTER_API_KEY else "❌ Not configured"}')
+    
+    # Security check - don't log actual credentials
+    logger.info(f'🔧 WatsonX API Key: {"✅ Configured" if config.WATSONX_API_KEY else "❌ Missing"}')
+    logger.info(f'🔧 WatsonX Deployment ID: {"✅ Configured" if config.WATSONX_DEPLOYMENT_ID else "❌ Missing"}')
+    logger.info(f'🔧 WatsonX URL: {"✅ Configured" if config.WATSONX_URL else "❌ Missing"}')
+    logger.info(f'🔧 OpenRouter API Key: {"✅ Configured" if config.OPENROUTER_API_KEY else "❌ Missing"}')
     
     # Initialize RAG system
     initialize_sentence_transformers()
     
-    logger.info('AI ready ')
+    logger.info('🔒 All credentials secured via environment variables')
+    logger.info('🚀 Samadhan AI ready for secure deployment!')
     
     app.run(host='0.0.0.0', port=config.PORT, debug=True)
