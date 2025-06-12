@@ -1,6 +1,6 @@
 # 🚀 Samadhan AI - AI-Powered Citizen Grievance Redressal System
 
-🎥 **Demo Video:** [Watch on YouTube](https://youtu.be/QJdDbCI56-A?si=eljc5ec3c1KMAliy)
+🎥 **Demo Video:** [Watch on YouTube](https://youtu.be/ozMmGEVifPg?si=-5Rb4Bi48IT9sTyc)
 
 ---
 
@@ -308,7 +308,7 @@ ibmcloud cf push samadhan-ai-backend
 
 ## 📺 Watch the Demo
 
-📽️ [**Click here to watch the YouTube demo**](https://youtu.be/QJdDbCI56-A?si=eljc5ec3c1KMAliy)
+📽️ [**Click here to watch the YouTube demo**](https://youtu.be/ozMmGEVifPg?si=-5Rb4Bi48IT9sTyc)
 
 ---
 
