@@ -306,7 +306,7 @@ export const VoiceChatbot: React.FC = () => {
                     firebaseStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>Firebase Real-time</span>
                   <span className={`px-2 py-1 rounded-full text-xs ${
-                    geminiStatus === 'configured' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'
+                    geminiStatus === 'configured' ? 'bg-purple-100 text-purple-700' : 'bg-purple-100 text-pruple-700'
                   }`}>Gemini AI Powered</span>
                   <span className="px-2 py-1 bg-gold-100 text-gold-700 rounded-full text-xs">Voice Support</span>
                   <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">10+ Languages</span>
@@ -337,8 +337,7 @@ export const VoiceChatbot: React.FC = () => {
                     <span>Firebase</span>
                   </div>
                   <div className={`flex items-center space-x-2 px-2 py-1 rounded-full text-xs ${
-                    geminiStatus === 'configured' ? 'bg-purple-100 text-purple-800' :
-                    geminiStatus === 'checking' ? 'bg-yellow-100 text-yellow-800' :
+                   
                     'bg-red-100 text-red-800'
                   }`}>
                     {getServiceStatusIcon(geminiStatus)}
