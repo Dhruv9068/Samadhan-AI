@@ -285,23 +285,23 @@ export const VoiceChatbot: React.FC = () => {
         )}
 
         {/* Chat Messages */}
-        <div className="h-80 sm:h-96 overflow-y-auto p-4 sm:px-6 space-y-4 bg-gradient-to-b from-cream-50 to-cream-100">
+        <div className="h-64 sm:h-80 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-cream-50 to-cream-100">
           <AnimatePresence>
             {messages.length === 0 && (
               <motion.div
-                className="text-center py-6 sm:py-8"
+                className="text-center py-4 sm:py-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <div className="flex items-center justify-center space-x-2 mb-4">
-                  <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-gold-500" />
-                  <Award className="w-6 h-6 text-yellow-500" />
+                <div className="flex items-center justify-center space-x-2 mb-3">
+                  <Brain className="w-8 h-8 sm:w-10 sm:h-10 text-gold-500" />
+                  <Award className="w-5 h-5 text-yellow-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">Welcome to Samadhan AI</h3>
-                <p className="text-gray-600 mb-4 text-sm sm:text-base px-4">
+                <p className="text-gray-600 mb-3 text-sm px-4">
                   AI system for UP CM Helpline 1076 automation
                 </p>
-                <div className="flex flex-wrap justify-center gap-2 mb-4">
+                <div className="flex flex-wrap justify-center gap-2 mb-3">
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     firebaseStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>Firebase Real-time</span>
@@ -310,30 +310,25 @@ export const VoiceChatbot: React.FC = () => {
                   }`}>Gemini AI Powered</span>
                   <span className="px-2 py-1 bg-gold-100 text-gold-700 rounded-full text-xs">Voice Support</span>
                   <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">10+ Languages</span>
-                
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600 max-w-2xl mx-auto px-4">
-                  <div className="bg-white/50 rounded-lg p-3">
-                    <strong>💡 Try saying:</strong><br />
-                    "Street lights not working in my area"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600 max-w-xl mx-auto px-4 mb-3">
+                  <div className="bg-white/50 rounded-lg p-2">
+                    <strong>💡 Try:</strong> "Street lights not working"
                   </div>
-                  <div className="bg-white/50 rounded-lg p-3">
-                    <strong>🔍 Or ask:</strong><br />
-                    "Water supply problem in locality"
+                  <div className="bg-white/50 rounded-lg p-2">
+                    <strong>🔍 Or ask:</strong> "Water supply problem"
                   </div>
-                  <div className="bg-white/50 rounded-lg p-3">
-                    <strong>🚦 Traffic issues:</strong><br />
-                    "Traffic signal not working"
+                  <div className="bg-white/50 rounded-lg p-2">
+                    <strong>🚦 Traffic:</strong> "Signal not working"
                   </div>
-                  <div className="bg-white/50 rounded-lg p-3">
-                    <strong>🏥 Healthcare:</strong><br />
-                    "Hospital services complaint"
+                  <div className="bg-white/50 rounded-lg p-2">
+                    <strong>🏥 Health:</strong> "Hospital complaint"
                   </div>
                 </div>
                 
                 {/* Services Status Indicators */}
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
-                  <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm ${
+                <div className="flex flex-wrap justify-center gap-2 mb-3">
+                  <div className={`flex items-center space-x-2 px-2 py-1 rounded-full text-xs ${
                     firebaseStatus === 'connected' ? 'bg-green-100 text-green-800' :
                     firebaseStatus === 'checking' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-red-100 text-red-800'
@@ -341,7 +336,7 @@ export const VoiceChatbot: React.FC = () => {
                     {getServiceStatusIcon(firebaseStatus)}
                     <span>Firebase</span>
                   </div>
-                  <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm ${
+                  <div className={`flex items-center space-x-2 px-2 py-1 rounded-full text-xs ${
                     geminiStatus === 'configured' ? 'bg-purple-100 text-purple-800' :
                     geminiStatus === 'checking' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-red-100 text-red-800'
@@ -351,8 +346,7 @@ export const VoiceChatbot: React.FC = () => {
                   </div>
                 </div>
 
-           
-                <div className="mt-4 text-xs text-gray-500">
+                <div className="text-xs text-gray-500">
                   <div className="flex items-center justify-center space-x-2">
                     <Award className="w-3 h-3 text-yellow-500" />
                     <span>AI-powered UP CM Helpline 1076 automation</span>

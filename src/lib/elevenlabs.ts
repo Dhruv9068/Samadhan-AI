@@ -1,4 +1,4 @@
-import { ElevenLabs } from 'elevenlabs-node';
+// Browser-compatible ElevenLabs service using fetch API
 
 // Voice IDs for different languages and personalities
 const VOICE_IDS = {
@@ -67,9 +67,9 @@ export interface ElevenLabsConfig {
 }
 
 export class ElevenLabsService {
-  private elevenlabs: any = null;
   private isInitialized: boolean = false;
   private currentVoiceId: string = VOICE_IDS['en-US'].samadhan;
+  private apiKey: string | null = null;
 
   constructor() {
     // Don't initialize immediately - wait for first use
@@ -79,16 +79,14 @@ export class ElevenLabsService {
     if (this.isInitialized) return;
 
     try {
-      const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+      this.apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
       
-      if (!apiKey) {
+      if (!this.apiKey) {
         console.warn('⚠️ ElevenLabs API key not found. Voice features will use fallback.');
         this.isInitialized = false;
         return;
       }
 
-      // Initialize ElevenLabs only when needed
-      this.elevenlabs = new ElevenLabs({ apiKey });
       this.isInitialized = true;
       console.log('✅ ElevenLabs initialized successfully');
     } catch (error) {
@@ -105,13 +103,13 @@ export class ElevenLabsService {
     console.log(`🎤 Voice set to: ${voiceType} for language: ${language}`);
   }
 
-  // Text-to-Speech with ElevenLabs
+  // Text-to-Speech with ElevenLabs using fetch API
   async textToSpeech(text: string, language: string = 'en-US'): Promise<ArrayBuffer | null> {
     try {
       // Initialize if not already done
       await this.initialize();
 
-      if (!this.isInitialized || !this.elevenlabs) {
+      if (!this.isInitialized || !this.apiKey) {
         console.log('🎤 ElevenLabs not available, using fallback');
         return null; // Signal to use fallback
       }
@@ -128,18 +126,31 @@ export class ElevenLabsService {
 
       console.log('🎤 ElevenLabs TTS:', { text: cleanText, voiceId: this.currentVoiceId });
 
-      const audioBuffer = await this.elevenlabs.textToSpeech({
-        text: cleanText,
-        voiceId: this.currentVoiceId,
-        modelId: 'eleven_multilingual_v2', // Use multilingual model for better language support
-        voiceSettings: {
-          stability: 0.5,
-          similarityBoost: 0.75,
-          style: 0.0,
-          useSpeakerBoost: true,
+      // Use ElevenLabs REST API
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${this.currentVoiceId}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey,
         },
+        body: JSON.stringify({
+          text: cleanText,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.0,
+            use_speaker_boost: true,
+          },
+        }),
       });
 
+      if (!response.ok) {
+        throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText}`);
+      }
+
+      const audioBuffer = await response.arrayBuffer();
       return audioBuffer;
     } catch (error) {
       console.warn('⚠️ ElevenLabs TTS error, using fallback:', error);
@@ -153,7 +164,7 @@ export class ElevenLabsService {
       // Initialize if not already done
       await this.initialize();
 
-      if (!this.isInitialized || !this.elevenlabs) {
+      if (!this.isInitialized || !this.apiKey) {
         console.log('🎤 ElevenLabs STS not available');
         return null;
       }
@@ -166,18 +177,31 @@ export class ElevenLabsService {
       // Convert blob to buffer
       const arrayBuffer = await audioBlob.arrayBuffer();
 
-      const audioBuffer = await this.elevenlabs.speechToSpeech({
-        audio: arrayBuffer,
-        voiceId: this.currentVoiceId,
-        modelId: 'eleven_multilingual_v2',
-        voiceSettings: {
-          stability: 0.5,
-          similarityBoost: 0.75,
-          style: 0.0,
-          useSpeakerBoost: true,
+      // Use ElevenLabs REST API for speech-to-speech
+      const formData = new FormData();
+      formData.append('audio', new Blob([arrayBuffer], { type: 'audio/wav' }));
+      formData.append('text', targetText);
+      formData.append('model_id', 'eleven_multilingual_v2');
+      formData.append('voice_settings', JSON.stringify({
+        stability: 0.5,
+        similarity_boost: 0.75,
+        style: 0.0,
+        use_speaker_boost: true,
+      }));
+
+      const response = await fetch(`https://api.elevenlabs.io/v1/speech-to-speech/${this.currentVoiceId}`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': this.apiKey,
         },
+        body: formData,
       });
 
+      if (!response.ok) {
+        throw new Error(`ElevenLabs STS API error: ${response.status} ${response.statusText}`);
+      }
+
+      const audioBuffer = await response.arrayBuffer();
       return audioBuffer;
     } catch (error) {
       console.warn('⚠️ ElevenLabs STS error:', error);
@@ -190,12 +214,22 @@ export class ElevenLabsService {
     try {
       await this.initialize();
       
-      if (!this.isInitialized || !this.elevenlabs) {
+      if (!this.isInitialized || !this.apiKey) {
         return [];
       }
 
-      const voices = await this.elevenlabs.voices.getAll();
-      return voices;
+      const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+        headers: {
+          'xi-api-key': this.apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`ElevenLabs voices API error: ${response.status}`);
+      }
+
+      const voices = await response.json();
+      return voices.voices || [];
     } catch (error) {
       console.warn('⚠️ Error fetching voices:', error);
       return [];

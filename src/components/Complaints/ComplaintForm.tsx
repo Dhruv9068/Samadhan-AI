@@ -189,18 +189,19 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({ onClose, onSubmit 
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="bg-cream-50 rounded-xl shadow-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-cream-50 rounded-xl shadow-xl p-4 sm:p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
+        style={{ marginTop: '2rem' }}
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
