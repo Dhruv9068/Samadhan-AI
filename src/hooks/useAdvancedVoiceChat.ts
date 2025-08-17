@@ -4,6 +4,7 @@ import { getSafeDb, COLLECTIONS, serverTimestamp } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { geminiAI, AIResponse } from '../lib/gemini';
+import { elevenLabsService } from '../lib/elevenlabs';
 
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
@@ -42,10 +43,17 @@ export const useAdvancedVoiceChat = () => {
   const [currentLanguage, setCurrentLanguage] = useState('en-US');
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
 
   useEffect(() => {
     // Initialize session
     setSessionId(uuidv4());
+
+    // Initialize AudioContext for ElevenLabs audio playback
+    if (typeof window !== 'undefined' && window.AudioContext) {
+      const context = new AudioContext();
+      setAudioContext(context);
+    }
 
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -87,6 +95,52 @@ export const useAdvancedVoiceChat = () => {
     } catch (error) {
       console.error('❌ Gemini AI error:', error);
       throw error;
+    }
+  };
+
+  const speakWithElevenLabs = async (text: string, language: string) => {
+    try {
+      setIsSpeaking(true);
+      
+      // Get audio buffer from ElevenLabs
+      const audioBuffer = await elevenLabsService.textToSpeech(text, language);
+      
+      if (audioContext && audioBuffer) {
+        // Decode the audio buffer
+        const decodedAudio = await audioContext.decodeAudioData(audioBuffer);
+        
+        // Create audio source
+        const source = audioContext.createBufferSource();
+        source.buffer = decodedAudio;
+        source.connect(audioContext.destination);
+        
+        // Play the audio
+        source.start(0);
+        
+        // Handle completion
+        source.onended = () => {
+          setIsSpeaking(false);
+        };
+        
+        console.log('🎤 ElevenLabs audio playing...');
+      }
+    } catch (error) {
+      console.error('❌ ElevenLabs TTS error:', error);
+      setIsSpeaking(false);
+      
+      // Fallback to basic speech synthesis if ElevenLabs fails
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = language;
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        
+        utterance.onend = () => {
+          setIsSpeaking(false);
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      }
     }
   };
 
@@ -147,10 +201,8 @@ export const useAdvancedVoiceChat = () => {
 
       setMessages(prev => [...prev, botMessage]);
       
-      // Speak the response
-      if ('speechSynthesis' in window) {
-        speakText(aiResult.response);
-      }
+      // Speak the response using ElevenLabs
+      await speakWithElevenLabs(aiResult.response, currentLanguage);
     } catch (error) {
       console.error('Error processing voice input:', error);
       const errorMessage: ChatMessage = {
@@ -200,20 +252,9 @@ export const useAdvancedVoiceChat = () => {
     }
   };
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      setIsSpeaking(true);
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = currentLanguage;
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      
-      utterance.onend = () => {
-        setIsSpeaking(false);
-      };
-      
-      window.speechSynthesis.speak(utterance);
-    }
+  const speakText = async (text: string) => {
+    // Use ElevenLabs for high-quality TTS
+    await speakWithElevenLabs(text, currentLanguage);
   };
 
   const startListening = useCallback(() => {
@@ -231,11 +272,18 @@ export const useAdvancedVoiceChat = () => {
   }, [recognition, isListening]);
 
   const stopSpeaking = useCallback(() => {
+    // Stop ElevenLabs audio if playing
+    if (audioContext && audioContext.state === 'running') {
+      audioContext.suspend();
+    }
+    
+    // Stop basic speech synthesis if using fallback
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      setIsSpeaking(false);
     }
-  }, []);
+    
+    setIsSpeaking(false);
+  }, [audioContext]);
 
   const sendTextMessage = useCallback(async (text: string) => {
     const userMessage: ChatMessage = {
