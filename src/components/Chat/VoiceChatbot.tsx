@@ -17,21 +17,26 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
-  Award
+  Award,
+  Square
 } from 'lucide-react';
 import { useAdvancedVoiceChat } from '../../hooks/useAdvancedVoiceChat';
+import { geminiAI } from '../../lib/gemini';
 
 export const VoiceChatbot: React.FC = () => {
   const [textInput, setTextInput] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [firebaseStatus, setFirebaseStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [geminiStatus, setGeminiStatus] = useState<'checking' | 'configured' | 'not-configured' | 'error'>('checking');
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
     messages,
-    isListening,
+    isListening: hookIsListening,
     isProcessing,
-    isSpeaking,
+    isSpeaking: hookIsSpeaking,
     currentLanguage,
     startListening,
     stopListening,
@@ -41,27 +46,41 @@ export const VoiceChatbot: React.FC = () => {
     clearChat
   } = useAdvancedVoiceChat();
 
+  // Sync local state with hook state
+  useEffect(() => {
+    setIsListening(hookIsListening);
+    setIsSpeaking(hookIsSpeaking);
+  }, [hookIsListening, hookIsSpeaking]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(scrollToBottom, [messages]);
 
-  // Check Firebase status on component mount
+  // Check services status on component mount
   useEffect(() => {
-    const checkFirebaseStatus = async () => {
+    const checkServicesStatus = async () => {
       try {
+        // Check Firebase status
         const { isFirebaseInitialized } = await import('../../lib/firebase');
         setFirebaseStatus(isFirebaseInitialized() ? 'connected' : 'error');
-        console.log('🔍 Firebase Status Check:');
+        
+        // Check Gemini AI status
+        const geminiStatus = geminiAI.getStatus();
+        setGeminiStatus(geminiStatus);
+        
+        console.log('🔍 Services Status Check:');
         console.log('Firebase:', isFirebaseInitialized() ? '✅ Connected' : '❌ Error');
+        console.log('Gemini AI:', geminiStatus);
       } catch (error) {
-        console.error('Firebase status check failed:', error);
+        console.error('Services status check failed:', error);
         setFirebaseStatus('error');
+        setGeminiStatus('error');
       }
     };
 
-    checkFirebaseStatus();
+    checkServicesStatus();
   }, []);
 
   const handleSendMessage = async () => {
@@ -76,6 +95,18 @@ export const VoiceChatbot: React.FC = () => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleVoiceToggle = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  const handleStopSpeech = () => {
+    stopSpeaking();
   };
 
   const getStatusText = () => {
@@ -97,9 +128,12 @@ export const VoiceChatbot: React.FC = () => {
       case 'checking':
         return <Loader className="w-3 h-3 animate-spin text-yellow-500" />;
       case 'connected':
+      case 'configured':
         return <CheckCircle className="w-3 h-3 text-green-500" />;
       case 'error':
         return <AlertCircle className="w-3 h-3 text-red-500" />;
+      case 'not-configured':
+        return <AlertCircle className="w-3 h-3 text-orange-500" />;
       default:
         return <div className="w-3 h-3 rounded-full bg-gray-500" />;
     }
@@ -110,16 +144,33 @@ export const VoiceChatbot: React.FC = () => {
       case 'checking':
         return `Connecting to ${service}...`;
       case 'connected':
+      case 'configured':
         return `${service} Connected`;
       case 'error':
         return `${service} Connection Error`;
+      case 'not-configured':
+        return `${service} Not Configured`;
       default:
         return `${service} Status Unknown`;
     }
   };
 
   const getOverallSystemStatus = () => {
-    return firebaseStatus === 'connected' ? 'all-connected' : 'disconnected';
+    const firebaseOk = firebaseStatus === 'connected';
+    const geminiOk = geminiStatus === 'configured';
+    
+    if (firebaseOk && geminiOk) return 'all-connected';
+    if (firebaseOk || geminiOk) return 'partial';
+    return 'disconnected';
+  };
+
+  const formatResponse = (text: string) => {
+    // Remove markdown formatting and clean up the response
+    return text
+      .replace(/\*\*/g, '') // Remove bold markers
+      .replace(/\*/g, '')   // Remove italic markers
+      .replace(/^Samadhan AI:\s*/i, '') // Remove "Samadhan AI:" prefix
+      .trim();
   };
 
   return (
@@ -146,7 +197,8 @@ export const VoiceChatbot: React.FC = () => {
                   {getServiceStatusIcon(firebaseStatus)}
                   <span>Firebase</span>
                   <span>•</span>
-                  <span className="text-yellow-300">Gemini AI Powered</span>
+                  {getServiceStatusIcon(geminiStatus)}
+                  <span>Gemini AI</span>
                   <span>•</span>
                   <span className="text-yellow-300">Highly Trained</span>
                 </p>
@@ -176,6 +228,7 @@ export const VoiceChatbot: React.FC = () => {
               <div className="flex items-center justify-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   getOverallSystemStatus() === 'all-connected' ? 'bg-green-300 animate-pulse' :
+                  getOverallSystemStatus() === 'partial' ? 'bg-yellow-300 animate-pulse' :
                   'bg-red-300 animate-pulse'
                 }`}></div>
                 <span className="text-sm font-medium">
@@ -198,25 +251,39 @@ export const VoiceChatbot: React.FC = () => {
 
         {/* Services Status Banner */}
         {getOverallSystemStatus() !== 'all-connected' && (
-          <div className="px-4 sm:px-6 py-3 border-b bg-red-50 border-red-200">
+          <div className={`px-4 sm:px-6 py-3 border-b ${
+            getOverallSystemStatus() === 'partial' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
+          }`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center space-x-2">
                   {getServiceStatusIcon(firebaseStatus)}
-                  <span className="text-sm font-medium text-red-800">
+                  <span className={`text-sm font-medium ${
+                    getOverallSystemStatus() === 'partial' ? 'text-yellow-800' : 'text-red-800'
+                  }`}>
                     {getServiceStatusText('Firebase', firebaseStatus)}
                   </span>
                 </div>
+                <div className="flex items-center space-x-2">
+                  {getServiceStatusIcon(geminiStatus)}
+                  <span className={`text-sm font-medium ${
+                    getOverallSystemStatus() === 'partial' ? 'text-yellow-800' : 'text-red-800'
+                  }`}>
+                    {getServiceStatusText('Gemini AI', geminiStatus)}
+                  </span>
+                </div>
               </div>
-              <span className="text-xs text-red-600">
-                (Limited functionality available)
+              <span className={`text-xs ${
+                getOverallSystemStatus() === 'partial' ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {getOverallSystemStatus() === 'partial' ? '(Partial functionality available)' : '(Limited functionality available)'}
               </span>
             </div>
           </div>
         )}
 
         {/* Chat Messages */}
-        <div className="h-80 sm:h-96 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-cream-50 to-cream-100">
+        <div className="h-80 sm:h-96 overflow-y-auto p-4 sm:px-6 space-y-4 bg-gradient-to-b from-cream-50 to-cream-100">
           <AnimatePresence>
             {messages.length === 0 && (
               <motion.div
@@ -236,7 +303,9 @@ export const VoiceChatbot: React.FC = () => {
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     firebaseStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>Firebase Real-time</span>
-                  <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">Gemini AI Powered</span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    geminiStatus === 'configured' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'
+                  }`}>Gemini AI Powered</span>
                   <span className="px-2 py-1 bg-gold-100 text-gold-700 rounded-full text-xs">Voice Support</span>
                   <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">10+ Languages</span>
                 
@@ -270,8 +339,12 @@ export const VoiceChatbot: React.FC = () => {
                     {getServiceStatusIcon(firebaseStatus)}
                     <span>Firebase</span>
                   </div>
-                  <div className="flex items-center space-x-2 px-3 py-2 rounded-full text-sm bg-purple-100 text-purple-800">
-                    <CheckCircle className="w-3 h-3 text-purple-600" />
+                  <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm ${
+                    geminiStatus === 'configured' ? 'bg-purple-100 text-purple-800' :
+                    geminiStatus === 'checking' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {getServiceStatusIcon(geminiStatus)}
                     <span>Gemini AI</span>
                   </div>
                 </div>
@@ -311,13 +384,15 @@ export const VoiceChatbot: React.FC = () => {
                       <User className="w-4 h-4 mt-1 text-white flex-shrink-0" />
                     )}
                     <div className="flex-1">
-                      <p className="text-sm leading-relaxed">{message.text}</p>
+                      <p className="text-sm leading-relaxed">
+                        {message.isUser ? message.text : formatResponse(message.text)}
+                      </p>
                       <p className={`text-xs mt-1 ${
                         message.isUser ? 'text-white/70' : 'text-gray-500'
                       }`}>
                         <div className='flex justify-between items-center'>
                         {message.timestamp.toLocaleTimeString()}
-                        <p>Samadhan AI</p>
+                        <p>{message.isUser ? 'You' : 'Samadhan AI'}</p>
                         </div>
                         {message.language && ` • ${message.language}`}
                       </p>
@@ -340,6 +415,20 @@ export const VoiceChatbot: React.FC = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* Listening Indicator */}
+            {isListening && (
+              <motion.div
+                className="flex justify-start"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="bg-blue-100 border border-blue-200 rounded-xl px-4 py-3 flex items-center space-x-2 shadow-sm">
+                  <Mic className="w-4 h-4 text-blue-600 animate-pulse" />
+                  <span className="text-sm text-blue-600 font-medium">Listening...</span>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
@@ -355,13 +444,24 @@ export const VoiceChatbot: React.FC = () => {
                     ? 'bg-red-500 text-white shadow-lg' 
                     : 'bg-gold-500 hover:bg-gold-600 text-white'
                 }`}
-                onClick={isListening ? stopListening : startListening}
+                onClick={handleVoiceToggle}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 disabled={isProcessing}
               >
                 {isListening ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
               </motion.button>
+
+              {isSpeaking && (
+                <motion.button
+                  className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
+                  onClick={handleStopSpeech}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Square className="w-3 h-3 sm:w-4 sm:h-4" />
+                </motion.button>
+              )}
 
               <motion.button
                 className={`p-2 rounded-full transition-all duration-200 ${
@@ -420,8 +520,11 @@ export const VoiceChatbot: React.FC = () => {
                 {getServiceStatusIcon(firebaseStatus)}
                 <span>Firebase</span>
               </div>
-              <div className="flex items-center space-x-1 text-purple-600">
-                <CheckCircle className="w-3 h-3 text-purple-600" />
+              <div className={`flex items-center space-x-1 ${
+                geminiStatus === 'configured' ? 'text-purple-600' : 
+                geminiStatus === 'checking' ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {getServiceStatusIcon(geminiStatus)}
                 <span>Gemini AI</span>
               </div>
             </div>

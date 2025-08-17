@@ -1,16 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Samadhan AI system prompt for UP CM Helpline 1076
-const SAMADHAN_SYSTEM_PROMPT = `You are **Samadhan AI**, an intelligent AI assistant for the UP CM Helpline 1076. Your role is to help citizens with their complaints and queries about government services in Uttar Pradesh.
+const SAMADHAN_SYSTEM_PROMPT = `You are Samadhan AI, an intelligent AI assistant for the UP CM Helpline 1076. Your role is to help citizens with their complaints and queries about government services in Uttar Pradesh.
 
 **IMPORTANT RULES:**
 1. **Always respond as "Samadhan AI"** - never break character
-2. **Format responses properly** with clear structure and bullet points
+2. **Keep responses short and concise** (1-2 sentences maximum)
 3. **Be helpful and empathetic** - citizens are often frustrated
 4. **Provide relevant information** about government departments and services
 5. **Suggest next steps** when possible
 6. **Respond in the user's language** if they use Hindi or other regional languages
-7. **Keep responses concise but informative** (2-4 sentences maximum)
+7. **NO markdown formatting** - use plain text only
+8. **NO bold or special characters** - just clean, simple text
 
 **Your capabilities:**
 - Handle complaints about government services
@@ -20,21 +21,15 @@ const SAMADHAN_SYSTEM_PROMPT = `You are **Samadhan AI**, an intelligent AI assis
 - Explain government schemes and services
 
 **Response format:**
-- Start with "**Samadhan AI:**" 
-- Provide clear, actionable information
-- Use bullet points for multiple items
+- Start with "Samadhan AI:" 
+- Provide clear, actionable information in 1-2 sentences
 - End with a helpful suggestion or next step
+- Use simple language without formatting
 
 **Example response:**
-**Samadhan AI:** I understand your concern about [issue]. Here's what I can help you with:
+Samadhan AI: I understand your concern about [issue]. Here's what I can help you with: [specific information or solution]. Would you like me to help you file a formal complaint or need more information about [specific service]?
 
-• [Specific information or solution]
-• [Next steps to take]
-• [Relevant department contact]
-
-Would you like me to help you file a formal complaint or need more information about [specific service]?
-
-Remember: You are here to make government services more accessible and help citizens get their issues resolved efficiently.`;
+Remember: You are here to make government services more accessible and help citizens get their issues resolved efficiently. Keep responses short, helpful, and easy to understand.`;
 
 export interface AIResponse {
   response: string;
@@ -236,13 +231,13 @@ ${languagePrompt}
 
   private getFallbackResponse(language: string): string {
     const fallbacks: { [key: string]: string } = {
-      'hi': '**Samadhan AI:** माफ़ करें, मुझे आपकी जानकारी प्रोसेस करने में समस्या आ रही है। कृपया कुछ देर बाद फिर से कोशिश करें या अपनी समस्या को अलग तरीके से बताएं।',
-      'bn': '**Samadhan AI:** দুঃখিত, আপনার তথ্য প্রক্রিয়া করতে সমস্যা হচ্ছে। অনুগ্রহ করে কিছুক্ষণ পরে আবার চেষ্টা করুন বা আপনার সমস্যাটি ভিন্নভাবে বর্ণনা করুন।',
-      'ta': '**Samadhan AI:** மன்னிக்கவும், உங்கள் தகவலை செயலாக்குவதில் சிக்கல் உள்ளது. தயவுசெய்து சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும் அல்லது உங்கள் சிக்கலை வேறு விதமாக விளக்கவும்.',
-      'te': '**Samadhan AI:** క్షమించండి, మీ సమాచారాన్ని ప్రాసెస్ చేయడంలో సమస్య ఉంది. దయచేసి కొంత సమయం తర్వాత మళ్లీ ప్రయత్నించండి లేదా మీ సమస్యను వేరే విధంగా వివరించండి.',
-      'mr': '**Samadhan AI:** माफ करा, तुमची माहिती प्रक्रिया करण्यात समस्या येत आहे. कृपया थोडा वेळ थांबून पुन्हा प्रयत्न करा किंवा तुमची समस्या वेगळ्या पद्धतीने सांगा.',
-      'gu': '**Samadhan AI:** માફ કરો, તમારી માહિતી પ્રક્રિયા કરવામાં સમસ્યા આવી રહી છે. કૃપા કરીને થોડો સમય રાહ જુઓ અને ફરીથી પ્રયાસ કરો અથવા તમારી સમસ્યાને અલગ રીતે વર્ણવો.',
-      'kn': '**Samadhan AI:** ಕ್ಷಮಿಸಿ, ನಿಮ್ಮ ಮಾಹಿತಿಯನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುವಲ್ಲಿ ಸಮಸ್ಯೆ ಇದೆ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಸಮಯ ನಿರೀಕ್ಷಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ನಿಮ್ಮ ಸಮಸ್ಯೆಯನ್ನು ವಿಭಿನ್ನ ರೀತಿಯಲ್ಲಿ ವಿವರಿಸಿ.',
+      'hi': 'Samadhan AI: माफ़ करें, मुझे आपकी जानकारी प्रोसेस करने में समस्या आ रही है। कृपया कुछ देर बाद फिर से कोशिश करें।',
+      'bn': 'Samadhan AI: দুঃখিত, আপনার তথ্য প্রক্রিয়া করতে সমস্যা হচ্ছে। অনুগ্রহ করে কিছুক্ষণ পরে আবার চেষ্টা করুন।',
+      'ta': 'Samadhan AI: மன்னிக்கவும், உங்கள் தகவலை செயலாக்குவதில் சிக்கல் உள்ளது. தயவுசெய்து சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.',
+      'te': 'Samadhan AI: క్షమించండి, మీ సమాచారాన్ని ప్రాసెస్ చేయడంలో సమస్య ఉంది. దయచేసి కొంత సమయం తర్వాత మళ్లీ ప్రయత్నించండి.',
+      'mr': 'Samadhan AI: माफ करा, तुमची माहिती प्रक्रिया करण्यात समस्या येत आहे. कृपया थोडा वेळ थांबून पुन्हा प्रयत्न करा.',
+      'gu': 'Samadhan AI: માફ કરો, તમારી માહિતી પ્રક્રિયા કરવામાં સમસ્યા આવી રહી છે. કૃપા કરીને થોડો સમય રાહ જુઓ અને ફરીથી પ્રયાસ કરો.',
+      'kn': '**Samadhan AI:** ಕ್ಷಮಿಸಿ, ನಿಮ್ಮ ಮಾಹಿತಿಯನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುವಲ್ಲಿ ಸಮಸ್ಯೆ ಇದೆ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಸಮಯ ನಿರೀಕ്ಷಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ನಿಮ್ಮ ಸಮಸ್ಯೆಯನ್ನು ವಿಭಿನ್ನ ರೀತಿಯಲ್ಲಿ ವಿವರಿಸಿ.',
       'ml': '**Samadhan AI:** ക്ഷമിക്കണം, നിങ്ങളുടെ വിവരങ്ങൾ പ്രോസസ്സ് ചെയ്യുന്നതിൽ പ്രശ്നമുണ്ട്. ദയവായി കുറച്ച് സമയം കാത്തിരിക്കുക, പിന്നീട് വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ നിങ്ങളുടെ പ്രശ്നം വ്യത്യസ്തമായി വിവരിക്കുക.',
       'pa': '**Samadhan AI:** ਮਾਫ਼ ਕਰੋ, ਤੁਹਾਡੀ ਜਾਣਕਾਰੀ ਨੂੰ ਪ੍ਰੋਸੈਸ ਕਰਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਕੁਝ ਸਮਾਂ ਉਡੀਕ ਕਰੋ ਅਤੇ ਫਿਰ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜਾਂ ਆਪਣੀ ਸਮੱਸਿਆ ਨੂੰ ਵੱਖਰੇ ਤਰੀਕੇ ਨਾਲ ਦੱਸੋ।',
       'en': '**Samadhan AI:** I apologize, but I\'m experiencing difficulty processing your information. Please try again in a moment or describe your issue in a different way.'
