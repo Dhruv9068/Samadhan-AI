@@ -1,8 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-
 // Samadhan AI system prompt for UP CM Helpline 1076
 const SAMADHAN_SYSTEM_PROMPT = `You are **Samadhan AI**, an intelligent AI assistant for the UP CM Helpline 1076. Your role is to help citizens with their complaints and queries about government services in Uttar Pradesh.
 
@@ -51,20 +48,42 @@ export interface AIResponse {
 }
 
 export class GeminiAIService {
-  private model: any;
+  private model: any = null;
+  private isInitialized: boolean = false;
 
-  constructor() {
+  private initialize() {
+    if (this.isInitialized) return;
+
     try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        console.error('❌ Gemini AI API key not found. Please set VITE_GEMINI_API_KEY in your environment variables.');
+        throw new Error('Gemini AI API key not configured');
+      }
+
+      const genAI = new GoogleGenerativeAI(apiKey);
       this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      this.isInitialized = true;
       console.log('✅ Gemini AI initialized successfully');
     } catch (error) {
       console.error('❌ Gemini AI initialization failed:', error);
+      this.isInitialized = false;
       throw error;
     }
   }
 
   async generateResponse(message: string, language: string = 'en'): Promise<AIResponse> {
     try {
+      // Initialize if not already done
+      if (!this.isInitialized) {
+        this.initialize();
+      }
+
+      if (!this.model) {
+        throw new Error('Gemini AI model not available');
+      }
+
       // Detect if message is in Hindi or other regional languages
       const isHindi = /[\u0900-\u097F]/.test(message);
       const isBengali = /[\u0980-\u09FF]/.test(message);
@@ -230,6 +249,18 @@ ${languagePrompt}
     };
 
     return fallbacks[language] || fallbacks['en'];
+  }
+
+  // Method to check if the service is properly configured
+  isConfigured(): boolean {
+    return !!import.meta.env.VITE_GEMINI_API_KEY;
+  }
+
+  // Method to get configuration status
+  getStatus(): 'configured' | 'not-configured' | 'error' {
+    if (!this.isConfigured()) return 'not-configured';
+    if (this.isInitialized) return 'configured';
+    return 'error';
   }
 }
 
