@@ -3,6 +3,7 @@ import { ChatMessage } from '../types';
 import { getSafeDb, COLLECTIONS, serverTimestamp } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
+import { geminiAI, AIResponse } from '../lib/gemini';
 
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
@@ -42,9 +43,6 @@ export const useAdvancedVoiceChat = () => {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
 
-  // Backend URL for centralized AI
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-
   useEffect(() => {
     // Initialize session
     setSessionId(uuidv4());
@@ -75,37 +73,19 @@ export const useAdvancedVoiceChat = () => {
     }
   }, [currentLanguage]);
 
-  const callBackendAI = async (message: string, language: string) => {
+  const callGeminiAI = async (message: string, language: string): Promise<AIResponse> => {
     try {
-      console.log('🤖 Calling centralized backend AI...');
+      console.log('🤖 Calling Gemini AI...');
       
-      const response = await fetch(`${backendUrl}/api/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message,
-          language
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backend AI error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      // Extract language code from full language string (e.g., 'en-US' -> 'en')
+      const langCode = language.split('-')[0];
       
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      return {
-        response: data.response,
-        analysis: data.analysis
-      };
+      const response = await geminiAI.generateResponse(message, langCode);
+      console.log('✅ Gemini AI response received:', response);
+      
+      return response;
     } catch (error) {
-      console.error('❌ Backend AI error:', error);
+      console.error('❌ Gemini AI error:', error);
       throw error;
     }
   };
@@ -123,14 +103,14 @@ export const useAdvancedVoiceChat = () => {
     setIsProcessing(true);
 
     try {
-      // Call centralized backend AI
-      const aiResult = await callBackendAI(transcript, currentLanguage);
+      // Call Gemini AI
+      const aiResult = await callGeminiAI(transcript, currentLanguage);
       
       // Check if this is a complaint that should be saved
       const isComplaint = transcript.toLowerCase().includes('complaint') || 
                          transcript.toLowerCase().includes('problem') ||
                          transcript.toLowerCase().includes('issue') ||
-                         (aiResult.analysis && aiResult.analysis.category !== 'Other');
+                         (aiResult.analysis && aiResult.analysis.isComplaint);
 
       if (isComplaint && aiResult.analysis) {
         // Save complaint to Firebase using getSafeDb()
@@ -148,6 +128,7 @@ export const useAdvancedVoiceChat = () => {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });
+          console.log('✅ Complaint saved to Firebase');
         } catch (firebaseError) {
           console.error('❌ Firebase save error:', firebaseError);
           // Continue without saving to Firebase
@@ -174,7 +155,7 @@ export const useAdvancedVoiceChat = () => {
       console.error('Error processing voice input:', error);
       const errorMessage: ChatMessage = {
         id: uuidv4(),
-        text: 'I apologize, but I encountered an error processing your request. Please try again.',
+        text: '**Samadhan AI:** I apologize, but I encountered an error processing your request. Please try again.',
         isUser: false,
         timestamp: new Date()
       };
@@ -268,14 +249,14 @@ export const useAdvancedVoiceChat = () => {
     setIsProcessing(true);
 
     try {
-      // Call centralized backend AI
-      const aiResult = await callBackendAI(text, currentLanguage);
+      // Call Gemini AI
+      const aiResult = await callGeminiAI(text, currentLanguage);
       
       // Check if this is a complaint
       const isComplaint = text.toLowerCase().includes('complaint') || 
                          text.toLowerCase().includes('problem') ||
                          text.toLowerCase().includes('issue') ||
-                         (aiResult.analysis && aiResult.analysis.category !== 'Other');
+                         (aiResult.analysis && aiResult.analysis.isComplaint);
 
       if (isComplaint && aiResult.analysis) {
         // Save complaint to Firebase using getSafeDb()
@@ -293,6 +274,7 @@ export const useAdvancedVoiceChat = () => {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });
+          console.log('✅ Complaint saved to Firebase');
         } catch (firebaseError) {
           console.error('❌ Firebase save error:', firebaseError);
           // Continue without saving to Firebase
@@ -314,7 +296,7 @@ export const useAdvancedVoiceChat = () => {
       console.error('Error sending text message:', error);
       const errorMessage: ChatMessage = {
         id: uuidv4(),
-        text: 'I apologize, but I encountered an error processing your request. Please try again.',
+        text: '**Samadhan AI:** I apologize, but I encountered an error processing your request. Please try again.',
         isUser: false,
         timestamp: new Date()
       };

@@ -11,7 +11,7 @@ export const Chat: React.FC = () => {
         className="text-center"
       >
         <h1 className="text-3xl font-bold text-gray-800 mb-2">AI Chat Assistant</h1>
-        <p className="text-gold-600">Voice-enabled multilingual support powered by Watson AI</p>
+        <p className="text-gold-600">Voice-enabled multilingual support powered by Gemini AI</p>
       </motion.div>
       
       <VoiceChatbot />

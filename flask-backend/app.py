@@ -87,7 +87,7 @@ token_cache = {
     'expiry': 0
 }
 
-# Initialize components (without OpenAI)
+# Initialize components 
 sentence_model = None
 
 class SimpleDocument:

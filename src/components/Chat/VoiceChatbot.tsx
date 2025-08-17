@@ -24,7 +24,6 @@ import { useAdvancedVoiceChat } from '../../hooks/useAdvancedVoiceChat';
 export const VoiceChatbot: React.FC = () => {
   const [textInput, setTextInput] = useState('');
   const [isMuted, setIsMuted] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [firebaseStatus, setFirebaseStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,45 +47,21 @@ export const VoiceChatbot: React.FC = () => {
 
   useEffect(scrollToBottom, [messages]);
 
-  // Check services status on component mount
+  // Check Firebase status on component mount
   useEffect(() => {
-    const checkServicesStatus = async () => {
+    const checkFirebaseStatus = async () => {
       try {
-        // Check Firebase status
         const { isFirebaseInitialized } = await import('../../lib/firebase');
         setFirebaseStatus(isFirebaseInitialized() ? 'connected' : 'error');
-        
-        // Check Backend status
-        console.log('🔍 Testing Samadhan AI backend...');
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-        
-        try {
-          const response = await fetch(`${backendUrl}/health`);
-          if (response.ok) {
-            const data = await response.json();
-            setBackendStatus(data.status === 'healthy' ? 'connected' : 'error');
-            console.log('✅ Samadhan AI backend connected:', data);
-          } else {
-            setBackendStatus('error');
-            console.error('Backend health check failed:', response.status);
-          }
-        } catch (error) {
-          setBackendStatus('error');
-          console.error('Backend connection failed:', error);
-        }
-        
-        // console.log('🔍 Service Status Check:');
-        // console.log('Firebase:', isFirebaseInitialized() ? '✅ Connected' : '❌ Error');
-        // console.log('Samadhan AI Backend:', backendStatus === 'connected' ? '✅ Connected' : '❌ Error');
-        
+        console.log('🔍 Firebase Status Check:');
+        console.log('Firebase:', isFirebaseInitialized() ? '✅ Connected' : '❌ Error');
       } catch (error) {
-        console.error('Services status check failed:', error);
-        setBackendStatus('error');
+        console.error('Firebase status check failed:', error);
         setFirebaseStatus('error');
       }
     };
 
-    checkServicesStatus();
+    checkFirebaseStatus();
   }, []);
 
   const handleSendMessage = async () => {
@@ -105,7 +80,7 @@ export const VoiceChatbot: React.FC = () => {
 
   const getStatusText = () => {
     if (isListening) return 'Listening...';
-    if (isProcessing) return 'Processing with Samadhan AI...';
+    if (isProcessing) return 'Processing with Gemini AI...';
     if (isSpeaking) return 'Speaking...';
     return 'Ready';
   };
@@ -144,12 +119,7 @@ export const VoiceChatbot: React.FC = () => {
   };
 
   const getOverallSystemStatus = () => {
-    const connectedServices = [firebaseStatus, backendStatus].filter(s => s === 'connected').length;
-    const totalServices = 2;
-    
-    if (connectedServices === totalServices) return 'all-connected';
-    if (connectedServices > 0) return 'partial';
-    return 'disconnected';
+    return firebaseStatus === 'connected' ? 'all-connected' : 'disconnected';
   };
 
   return (
@@ -176,8 +146,7 @@ export const VoiceChatbot: React.FC = () => {
                   {getServiceStatusIcon(firebaseStatus)}
                   <span>Firebase</span>
                   <span>•</span>
-                  {getServiceStatusIcon(backendStatus)}
-                  <span>AI Backend</span>
+                  <span className="text-yellow-300">Gemini AI Powered</span>
                   <span>•</span>
                   <span className="text-yellow-300">Highly Trained</span>
                 </p>
@@ -207,7 +176,6 @@ export const VoiceChatbot: React.FC = () => {
               <div className="flex items-center justify-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   getOverallSystemStatus() === 'all-connected' ? 'bg-green-300 animate-pulse' :
-                  getOverallSystemStatus() === 'partial' ? 'bg-yellow-300 animate-pulse' :
                   'bg-red-300 animate-pulse'
                 }`}></div>
                 <span className="text-sm font-medium">
@@ -230,35 +198,19 @@ export const VoiceChatbot: React.FC = () => {
 
         {/* Services Status Banner */}
         {getOverallSystemStatus() !== 'all-connected' && (
-          <div className={`px-4 sm:px-6 py-3 border-b ${
-            getOverallSystemStatus() === 'partial' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
-          }`}>
+          <div className="px-4 sm:px-6 py-3 border-b bg-red-50 border-red-200">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center space-x-2">
                   {getServiceStatusIcon(firebaseStatus)}
-                  <span className={`text-sm font-medium ${
-                    getOverallSystemStatus() === 'partial' ? 'text-yellow-800' : 'text-red-800'
-                  }`}>
+                  <span className="text-sm font-medium text-red-800">
                     {getServiceStatusText('Firebase', firebaseStatus)}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {getServiceStatusIcon(backendStatus)}
-                  <span className={`text-sm font-medium ${
-                    getOverallSystemStatus() === 'partial' ? 'text-yellow-800' : 'text-red-800'
-                  }`}>
-                    {getServiceStatusText('Samadhan AI', backendStatus)}
-                  </span>
-                </div>
               </div>
-              {getOverallSystemStatus() !== 'all-connected' && (
-                <span className={`text-xs ${
-                  getOverallSystemStatus() === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                  {getOverallSystemStatus() === 'partial' ? '(Partial functionality available)' : '(Using fallback responses)'}
-                </span>
-              )}
+              <span className="text-xs text-red-600">
+                (Limited functionality available)
+              </span>
             </div>
           </div>
         )}
@@ -284,9 +236,7 @@ export const VoiceChatbot: React.FC = () => {
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     firebaseStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>Firebase Real-time</span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    backendStatus === 'connected' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'
-                  }`}>WatsonX + DeepSeek AI</span>
+                  <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">Gemini AI Powered</span>
                   <span className="px-2 py-1 bg-gold-100 text-gold-700 rounded-full text-xs">Voice Support</span>
                   <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">10+ Languages</span>
                 
@@ -320,29 +270,23 @@ export const VoiceChatbot: React.FC = () => {
                     {getServiceStatusIcon(firebaseStatus)}
                     <span>Firebase</span>
                   </div>
-                  <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm ${
-                    backendStatus === 'connected' ? 'bg-green-100 text-green-800' :
-                    backendStatus === 'checking' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {getServiceStatusIcon(backendStatus)}
-                    <span>Samadhan AI</span>
+                  <div className="flex items-center space-x-2 px-3 py-2 rounded-full text-sm bg-purple-100 text-purple-800">
+                    <CheckCircle className="w-3 h-3 text-purple-600" />
+                    <span>Gemini AI</span>
                   </div>
                 </div>
 
            
-                {backendStatus === 'connected' && (
-                  <div className="mt-4 text-xs text-gray-500">
-                    <div className="flex items-center justify-center space-x-2">
-                      <Award className="w-3 h-3 text-yellow-500" />
-                      <span>AI-powered UP CM Helpline 1076 automation</span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2 mt-1">
-                      <Info className="w-3 h-3" />
-                      <span>Tech Stack: WatsonX LLM • OpenRouter DeepSeek • RAG • Python ML</span>
-                    </div>
+                <div className="mt-4 text-xs text-gray-500">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Award className="w-3 h-3 text-yellow-500" />
+                    <span>AI-powered UP CM Helpline 1076 automation</span>
                   </div>
-                )}
+                  <div className="flex items-center justify-center space-x-2 mt-1">
+                    <Info className="w-3 h-3" />
+                    <span>Tech Stack: Gemini AI • Firebase • React • TypeScript</span>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -392,7 +336,7 @@ export const VoiceChatbot: React.FC = () => {
                 <div className="bg-white border border-gold-200 rounded-xl px-4 py-3 flex items-center space-x-2 shadow-sm">
                   <Brain className="w-4 h-4 text-gold-600" />
                   <Loader className="w-4 h-4 text-gold-600 animate-spin" />
-                  <span className="text-sm text-gray-600">Processing with Samadhan AI...</span>
+                  <span className="text-sm text-gray-600">Processing with Gemini AI...</span>
                 </div>
               </motion.div>
             )}
@@ -464,7 +408,7 @@ export const VoiceChatbot: React.FC = () => {
           {/* Enhanced Status Bar */}
           <div className="mt-3 sm:mt-4 text-center">
             <p className="text-xs text-gray-600 mb-2">
-              🎤 Voice recognition • 🧠 WatsonX + DeepSeek AI • 💾 Auto-saves complaints • 🌐 10+ languages • 🔥 Real-time Firebase 
+              🎤 Voice recognition • 🧠 Gemini AI • 💾 Auto-saves complaints • 🌐 10+ languages • 🔥 Real-time Firebase 
             </p>
             
             {/* Service Status Indicators */}
@@ -476,12 +420,9 @@ export const VoiceChatbot: React.FC = () => {
                 {getServiceStatusIcon(firebaseStatus)}
                 <span>Firebase</span>
               </div>
-              <div className={`flex items-center space-x-1 ${
-                backendStatus === 'connected' ? 'text-green-600' : 
-                backendStatus === 'checking' ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                {getServiceStatusIcon(backendStatus)}
-                <span>Samadhan AI</span>
+              <div className="flex items-center space-x-1 text-purple-600">
+                <CheckCircle className="w-3 h-3 text-purple-600" />
+                <span>Gemini AI</span>
               </div>
             </div>
           </div>
