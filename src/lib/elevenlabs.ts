@@ -1,10 +1,5 @@
 import { ElevenLabs } from 'elevenlabs-node';
 
-// Initialize ElevenLabs
-const elevenlabs = new ElevenLabs({
-  apiKey: import.meta.env.VITE_ELEVENLABS_API_KEY,
-});
-
 // Voice IDs for different languages and personalities
 const VOICE_IDS = {
   // English voices
@@ -72,28 +67,33 @@ export interface ElevenLabsConfig {
 }
 
 export class ElevenLabsService {
+  private elevenlabs: any = null;
   private isInitialized: boolean = false;
   private currentVoiceId: string = VOICE_IDS['en-US'].samadhan;
 
   constructor() {
-    this.initialize();
+    // Don't initialize immediately - wait for first use
   }
 
-  private initialize() {
+  private async initialize() {
+    if (this.isInitialized) return;
+
     try {
       const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
       
       if (!apiKey) {
-        console.error('❌ ElevenLabs API key not found. Please set VITE_ELEVENLABS_API_KEY in your environment variables.');
-        throw new Error('ElevenLabs API key not configured');
+        console.warn('⚠️ ElevenLabs API key not found. Voice features will use fallback.');
+        this.isInitialized = false;
+        return;
       }
 
+      // Initialize ElevenLabs only when needed
+      this.elevenlabs = new ElevenLabs({ apiKey });
       this.isInitialized = true;
       console.log('✅ ElevenLabs initialized successfully');
     } catch (error) {
-      console.error('❌ ElevenLabs initialization failed:', error);
+      console.warn('⚠️ ElevenLabs initialization failed, using fallback:', error);
       this.isInitialized = false;
-      throw error;
     }
   }
 
@@ -106,10 +106,14 @@ export class ElevenLabsService {
   }
 
   // Text-to-Speech with ElevenLabs
-  async textToSpeech(text: string, language: string = 'en-US'): Promise<ArrayBuffer> {
+  async textToSpeech(text: string, language: string = 'en-US'): Promise<ArrayBuffer | null> {
     try {
-      if (!this.isInitialized) {
-        this.initialize();
+      // Initialize if not already done
+      await this.initialize();
+
+      if (!this.isInitialized || !this.elevenlabs) {
+        console.log('🎤 ElevenLabs not available, using fallback');
+        return null; // Signal to use fallback
       }
 
       // Set appropriate voice for the language
@@ -124,7 +128,7 @@ export class ElevenLabsService {
 
       console.log('🎤 ElevenLabs TTS:', { text: cleanText, voiceId: this.currentVoiceId });
 
-      const audioBuffer = await elevenlabs.textToSpeech({
+      const audioBuffer = await this.elevenlabs.textToSpeech({
         text: cleanText,
         voiceId: this.currentVoiceId,
         modelId: 'eleven_multilingual_v2', // Use multilingual model for better language support
@@ -138,16 +142,20 @@ export class ElevenLabsService {
 
       return audioBuffer;
     } catch (error) {
-      console.error('❌ ElevenLabs TTS error:', error);
-      throw error;
+      console.warn('⚠️ ElevenLabs TTS error, using fallback:', error);
+      return null; // Signal to use fallback
     }
   }
 
   // Speech-to-Speech (Voice Cloning) - for future use
-  async speechToSpeech(audioBlob: Blob, targetText: string, language: string = 'en-US'): Promise<ArrayBuffer> {
+  async speechToSpeech(audioBlob: Blob, targetText: string, language: string = 'en-US'): Promise<ArrayBuffer | null> {
     try {
-      if (!this.isInitialized) {
-        this.initialize();
+      // Initialize if not already done
+      await this.initialize();
+
+      if (!this.isInitialized || !this.elevenlabs) {
+        console.log('🎤 ElevenLabs STS not available');
+        return null;
       }
 
       // Set appropriate voice for the language
@@ -158,7 +166,7 @@ export class ElevenLabsService {
       // Convert blob to buffer
       const arrayBuffer = await audioBlob.arrayBuffer();
 
-      const audioBuffer = await elevenlabs.speechToSpeech({
+      const audioBuffer = await this.elevenlabs.speechToSpeech({
         audio: arrayBuffer,
         voiceId: this.currentVoiceId,
         modelId: 'eleven_multilingual_v2',
@@ -172,22 +180,24 @@ export class ElevenLabsService {
 
       return audioBuffer;
     } catch (error) {
-      console.error('❌ ElevenLabs STS error:', error);
-      throw error;
+      console.warn('⚠️ ElevenLabs STS error:', error);
+      return null;
     }
   }
 
   // Get available voices
   async getVoices() {
     try {
-      if (!this.isInitialized) {
-        this.initialize();
+      await this.initialize();
+      
+      if (!this.isInitialized || !this.elevenlabs) {
+        return [];
       }
 
-      const voices = await elevenlabs.voices.getAll();
+      const voices = await this.elevenlabs.voices.getAll();
       return voices;
     } catch (error) {
-      console.error('❌ Error fetching voices:', error);
+      console.warn('⚠️ Error fetching voices:', error);
       return [];
     }
   }

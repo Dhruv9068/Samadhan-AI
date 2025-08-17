@@ -67,12 +67,14 @@ export const VoiceChatbot: React.FC = () => {
         setFirebaseStatus(isFirebaseInitialized() ? 'connected' : 'error');
         
         // Check Gemini AI status
-        const geminiStatus = geminiAI.getStatus();
-        setGeminiStatus(geminiStatus);
+        const { geminiAI } = await import('../../lib/gemini');
+        setGeminiStatus(geminiAI.getStatus());
         
-        console.log('🔍 Services Status Check:');
-        console.log('Firebase:', isFirebaseInitialized() ? '✅ Connected' : '❌ Error');
-        console.log('Gemini AI:', geminiStatus);
+        // Check ElevenLabs status
+        const { elevenLabsService } = await import('../../lib/elevenlabs');
+        const elevenLabsStatus = elevenLabsService.getStatus();
+        console.log('🎤 ElevenLabs status:', elevenLabsStatus);
+        
       } catch (error) {
         console.error('Services status check failed:', error);
         setFirebaseStatus('error');
@@ -200,7 +202,7 @@ export const VoiceChatbot: React.FC = () => {
                   {getServiceStatusIcon(geminiStatus)}
                   <span>Gemini AI</span>
                   <span>•</span>
-                  <span className="text-yellow-300">Highly Trained</span>
+                  <span className="text-yellow-300">Voice: ElevenLabs</span>
                 </p>
               </div>
             </div>

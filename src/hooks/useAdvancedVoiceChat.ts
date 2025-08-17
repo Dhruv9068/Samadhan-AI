@@ -105,8 +105,8 @@ export const useAdvancedVoiceChat = () => {
       // Get audio buffer from ElevenLabs
       const audioBuffer = await elevenLabsService.textToSpeech(text, language);
       
-      if (audioContext && audioBuffer) {
-        // Decode the audio buffer
+      if (audioBuffer && audioContext) {
+        // ElevenLabs succeeded - decode and play
         const decodedAudio = await audioContext.decodeAudioData(audioBuffer);
         
         // Create audio source
@@ -123,12 +123,29 @@ export const useAdvancedVoiceChat = () => {
         };
         
         console.log('🎤 ElevenLabs audio playing...');
+      } else {
+        // ElevenLabs failed or not configured - use fallback
+        console.log('🎤 Using fallback speech synthesis...');
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = language;
+          utterance.rate = 0.9;
+          utterance.pitch = 1;
+          
+          utterance.onend = () => {
+            setIsSpeaking(false);
+          };
+          
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setIsSpeaking(false);
+        }
       }
     } catch (error) {
-      console.error('❌ ElevenLabs TTS error:', error);
+      console.error('❌ Speech error:', error);
       setIsSpeaking(false);
       
-      // Fallback to basic speech synthesis if ElevenLabs fails
+      // Final fallback to basic speech synthesis
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = language;
